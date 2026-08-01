@@ -1,179 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ScamShield AI — Instant Scam &amp; Phishing Analyzer</title>
-<meta name="description" content="Paste any suspicious email, text, or DM and get an  AI-powered threat report — powered by Google Gemini." />
-
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 4 5v6c0 5.25 3.44 9.94 8 11.29C16.56 20.94 20 16.25 20 11V5l-8-3z' fill='%230f172a' stroke='%2322d3ee' stroke-width='1.6'/%3E%3Cpath d='M8.3 12.3l2.4 2.4 5-5.4' fill='none' stroke='%2322d3ee' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScamShield AI — Threat Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div class="bg-grid" aria-hidden="true"></div>
-<div class="bg-glow" aria-hidden="true"></div>
+<div class="technical-grid-bg" aria-hidden="true"></div>
 
-<div class="app-shell">
+<div class="app-layout">
+  
+  <aside class="editorial-sidebar">
+    <header class="brand-block">
+      <div class="brand-tag">SYS.SEC // 01</div>
+      <h1 class="massive-title">SCAM<br>SHIELD<span class="accent-dot">.</span></h1>
+      <p class="manifesto">Raw threat intelligence. Paste any message to instantly isolate phishing vectors, urgency tactics, and spoofed domains.</p>
+    </header>
 
-  <!-- ===================== HEADER ===================== -->
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2 4 5v6c0 5.25 3.44 9.94 8 11.29C16.56 20.94 20 16.25 20 11V5l-8-3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M8.3 12.3l2.4 2.4 5-5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <div class="brand-text">
-        <h1>ScamShield <span class="accent">AI</span></h1>
-        <p class="tagline">Paste a message, get an instant threat verdict — right in your browser.</p>
+    <section class="key-panel" aria-labelledby="keyPanelLabel">
+      <div class="key-panel-header">
+        <label id="keyPanelLabel" for="apiKeyInput">AUTHENTICATION [GEMINI_API]</label>
       </div>
-    </div>
-  </header>
-
-  <!-- ===================== API KEY PANEL ===================== -->
-  <section class="key-panel" aria-labelledby="keyPanelLabel">
-    <div class="key-panel-inner">
-      <div class="key-panel-label">
-        <label id="keyPanelLabel" for="apiKeyInput">Google Gemini API Key</label>
-        <p class="helper-text">
-          <svg class="lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="1.6"/></svg>
-          Kept only in this browser tab's session storage. Every scan goes straight from your browser to Google's Gemini API — never through our servers or anyone else's.
-        </p>
+      <div class="key-input-wrapper">
+        <input type="password" id="apiKeyInput" placeholder="Enter API Key (AIza...)" autocomplete="off" spellcheck="false" />
+        <button type="button" id="toggleKeyVisibility" class="mono-btn" aria-label="Toggle Visibility">[ O ]</button>
       </div>
-      <div class="key-input-row">
-        <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key (starts with AIza…)" autocomplete="off" spellcheck="false" />
-        <button type="button" id="toggleKeyVisibility" class="icon-btn" aria-label="Show API key" aria-pressed="false">
-          <svg class="eye-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.6"/>
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </section>
+      <p class="system-note">STATUS: Local Session Storage Only. Zero Server Retention.</p>
+    </section>
 
-  <!-- ===================== WORKSPACE ===================== -->
+    <footer class="sidebar-footer">
+      <p>CLIENT-SIDE V1.0 <br> AI VERDICTS REQUIRE HUMAN VERIFICATION.</p>
+    </footer>
+  </aside>
+
   <main class="workspace">
-
-    <!-- INPUT PANEL -->
-    <section class="panel input-panel" aria-labelledby="inputPanelHeading">
-      <div class="panel-header">
-        <h2 id="inputPanelHeading">Suspicious Message</h2>
-        <p class="panel-sub">Paste an email, SMS, or DM you want checked.</p>
-      </div>
-
-      <div class="sampler-row" role="group" aria-label="Load a demo message">
-        <span class="sampler-label">Try a sample</span>
-        <div class="sampler-buttons">
-          <button type="button" class="sampler-btn" data-sample="bank">🏦 Bank Scam</button>
-          <button type="button" class="sampler-btn" data-sample="amazon">📦 Amazon Phishing</button>
-          <button type="button" class="sampler-btn" data-sample="legit">✅ Legitimate Message</button>
+    
+    <section class="input-zone">
+      <div class="section-header-brutalist">
+        <h2>INPUT_VECTOR</h2>
+        <div class="demo-controls">
+          <span class="mono-label">INJECT_TEST_DATA:</span>
+          <button type="button" class="sampler-btn" data-sample="bank">BANK_FRAUD</button>
+          <button type="button" class="sampler-btn" data-sample="amazon">AMZN_PHISH</button>
+          <button type="button" class="sampler-btn" data-sample="legit">SAFE_MSG</button>
         </div>
       </div>
 
-      <div class="textarea-wrap">
-        <textarea id="userInput" placeholder="Paste the suspicious message here, or load a sample above…" spellcheck="false"></textarea>
-        <span class="char-count" id="charCount">0 characters</span>
+      <div class="textarea-container">
+        <textarea id="userInput" placeholder="Paste suspicious payload here..." spellcheck="false"></textarea>
+        <div class="textarea-footer">
+          <span id="charCount" class="mono-label">0 CHARS</span>
+        </div>
       </div>
 
-      <button type="button" id="analyzeBtn" class="analyze-btn">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2 4 5v6c0 5.25 3.44 9.94 8 11.29C16.56 20.94 20 16.25 20 11V5l-8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-        </svg>
-        <span class="btn-label">Analyze Threat</span>
+      <button type="button" id="analyzeBtn" class="brutalist-action-btn">
+        <span class="btn-label">INITIATE_ANALYSIS</span>
+        <span class="btn-icon">➔</span>
       </button>
     </section>
 
-    <!-- RESULTS PANEL -->
-    <section class="panel results-panel" aria-labelledby="resultsPanelHeading" aria-live="polite">
-      <div class="panel-header">
-        <h2 id="resultsPanelHeading">Threat Report</h2>
-        <p class="panel-sub">Your AI-generated risk assessment appears here.</p>
-      </div>
-
-      <!-- Idle state -->
+    <section class="results-zone" aria-live="polite">
+      
       <div class="scan-stage" id="resultsIdle">
-        <div class="gauge-wrap state-idle">
-          <svg viewBox="0 0 200 200">
-            <circle class="gauge-track" cx="100" cy="100" r="85" />
-          </svg>
-          <div class="gauge-center">
-            <svg class="gauge-shield" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 2 4 5v6c0 5.25 3.44 9.94 8 11.29C16.56 20.94 20 16.25 20 11V5l-8-3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-        <h3 class="stage-title">Awaiting Scan</h3>
-        <p class="stage-sub">Load a sample or paste a message, then hit "Analyze Threat".</p>
+        <h3 class="stage-mono">SYSTEM_READY</h3>
+        <p>Awaiting payload injection.</p>
       </div>
 
-      <!-- Loading state -->
       <div class="scan-stage" id="resultsLoading" hidden>
-        <div class="gauge-wrap state-loading">
-          <svg viewBox="0 0 200 200">
-            <circle class="gauge-track" cx="100" cy="100" r="85" />
-          </svg>
-          <div class="gauge-center">
-            <span class="pulse-dot"></span>
-          </div>
-        </div>
-        <h3 class="stage-title">Analyzing…</h3>
-        <p class="stage-sub scan-status" id="scanStatus">Parsing message structure…</p>
+        <div class="spinner-block"></div>
+        <h3 class="stage-mono" id="scanStatus">Parsing message structure...</h3>
       </div>
 
-      <!-- Results card: hidden until analysis completes -->
-      <div class="results-card" id="resultsCard">
-        <div class="gauge-wrap state-done" id="gaugeWrap">
-          <svg viewBox="0 0 200 200">
-            <circle class="gauge-track" cx="100" cy="100" r="85" />
-            <circle class="gauge-fill" id="gaugeFill" cx="100" cy="100" r="85" />
-          </svg>
-          <div class="gauge-center">
-            <span class="gauge-score" id="riskScoreValue">0</span>
-            <span class="gauge-max">/ 100</span>
+      <div class="results-bento" id="resultsCard">
+        
+        <div class="bento-cell score-cell">
+          <div class="cell-label">RISK_QUOTIENT</div>
+          <div class="score-display">
+            <div class="gauge-wrap state-done" id="gaugeWrap">
+              <svg viewBox="0 0 200 200">
+                <circle class="gauge-track" cx="100" cy="100" r="85" />
+                <circle class="gauge-fill" id="gaugeFill" cx="100" cy="100" r="85" />
+              </svg>
+              <div class="gauge-center">
+                <span class="gauge-score" id="riskScoreValue">0</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="threat-level-badge" id="threatLevelBadge">
-          <span class="badge-dot"></span>
-          <span id="threatLevelText">—</span>
+        <div class="bento-cell threat-cell">
+          <div class="cell-label">THREAT_CLASSIFICATION</div>
+          <div class="threat-level-badge" id="threatLevelBadge">
+            <span id="threatLevelText">—</span>
+          </div>
+          <div class="scam-type-label" id="scamTypeValue">—</div>
         </div>
 
-        <div class="result-row">
-          <span class="result-label">Scam Type</span>
-          <span class="result-value" id="scamTypeValue">—</span>
-        </div>
-
-        <div class="flags-block">
-          <h3>Red Flags Detected</h3>
+        <div class="bento-cell flags-cell">
+          <div class="cell-label">DETECTED_ANOMALIES</div>
           <ul id="flagsList" class="flags-list"></ul>
         </div>
 
-        <div class="recommendation-block">
-          <h3>Recommended Action</h3>
-          <p id="recommendationValue">—</p>
+        <div class="bento-cell action-cell">
+          <div class="cell-label">RECOMMENDED_PROTOCOL</div>
+          <p id="recommendationValue" class="protocol-text">—</p>
         </div>
+
       </div>
     </section>
-
   </main>
-
-  <footer class="app-footer">
-    <p>ScamShield AI runs 100% client-side, AI analysis can be wrong.</p>
-  </footer>
-
 </div>
 
-<!-- Toast notifications -->
 <div class="toast-stack" id="toastStack" aria-live="assertive"></div>
-
 <script src="script.js"></script>
 </body>
 </html>
