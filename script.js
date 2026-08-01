@@ -399,8 +399,8 @@ Respond with ONLY a raw JSON object — no markdown, no code fences, no commenta
     setAnalyzing(true);
     showLoadingState();
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+     
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
