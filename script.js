@@ -108,21 +108,26 @@
   /* ---------------------------------------------------------
      Demo Sampler Buttons
   --------------------------------------------------------- */
-  samplerButtons.forEach(btn => {
+  samplerButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const key = btn.getAttribute('data-sample');
-       
-      if (userInput && SAMPLES[key]) {
-        userInput.value = SAMPLES[key];
-         
-        if (charCount) {
-          charCount.textContent = SAMPLES[key].length;
-       }
-         
-       userInput.focus();
-    }
+      const sample = SAMPLES[key];
+
+      if (!userInput || !sample) {
+        showToast('That example could not be loaded.');
+        return;
+      }
+
+      userInput.value = sample;
+
+      if (charCount) {
+        charCount.textContent = `${sample.length} CHARS`;
+      }
+
+      userInput.focus();
+      resetResultsToIdle();
+    });
   });
-});
 
   /* ---------------------------------------------------------
      Toast Notifications
