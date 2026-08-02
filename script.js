@@ -305,10 +305,10 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
         responseSchema: {
           type: 'OBJECT',
           properties: {
-            risk_score: { type: 'NUMBER' },
-            threat_level: { type: 'STRING' },
-            scam_type: { type: 'STRING' },
-            flags: {
+            riskScore: { type: 'NUMBER' },
+            threatLevel: { type: 'STRING' },
+            scamType: { type: 'STRING' },
+            redFlags: {
               type: 'ARRAY',
               items: { type: 'STRING' }
             },
@@ -316,7 +316,7 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
               type: 'ARRAY',
               items: { type: 'STRING' }
             },
-            recommendation: {
+            recommendedFlags: {
               type: 'STRING'
             }
           },
