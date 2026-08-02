@@ -201,7 +201,7 @@ Front Desk, Bright Smile Dental`
 
     renderResult(result);
 
-    resultsCard.style.display = 'flex';
+    resultsCard.style.display = 'grid';
     // Allow the browser to register display:flex before animating opacity/transform in.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resultsCard.classList.add('visible'));
