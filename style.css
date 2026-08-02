@@ -209,8 +209,7 @@ body {
 .input-zone {
   padding: 40px;
   border-bottom: 1px solid var(--border);
-  background: rgba(9, 9, 11, 0.8);
-  backdrop-filter: blur(10px);
+  background: var(--surface);
 }
 
 .section-header-brutalist {
