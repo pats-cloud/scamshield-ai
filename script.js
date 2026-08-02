@@ -18,8 +18,8 @@
   const samplerButtons     = document.querySelectorAll('.sampler-btn[data-sample]');
   
   const analyzeBtn         = document.getElementById('analyzeBtn');
-  const analyzeIcon        = analyzeBtn.querySelector('.btn-icon');
-  const analyzeLabel       = analyzeBtn.querySelector('.btn-label');
+  const analyzeIcon        = analyzeBtn?.querySelector('.btn-icon') ?? null;
+  const analyzeLabel       = analyzeBtn?.querySelector('.btn-label') ?? null;
 
   const resultsIdle        = document.getElementById('resultsIdle');
   const resultsLoading     = document.getElementById('resultsLoading');
@@ -42,37 +42,37 @@
   const SAMPLES = {
      bank: `Subject: URGENT - Account Suspension Notice
 
-   Dear Valued Customer,
+    Dear Valued Customer,
 
-   We have detected unusual activity on your First National Bank account ending in 4482. Your account will be SUSPENDED within 24 hours unless you verify your identity immediately.
+    We have detected unusual activity on your First National Bank account ending in 4482. Your account will be SUSPENDED within 24 hours unless you verify your identity immediately.
 
-   Click here to confirm your details:
-   http://fnb-secure-verify.com/login
+    Click here to confirm your details:
+    http://fnb-secure-verify.com/login
 
-   Failure to act will result in permanent account closure.
+    Failure to act will result in permanent account closure.
 
-   First National Bank Security Team`,
+    First National Bank Security Team`,
 
-     amazon: `Hello,
+      amazon: `Hello,
 
-   Your recent Amazon order #702-1938224-5563141 could not be shipped because your payment method was declined.
+    Your recent Amazon order #702-1938224-5563141 could not be shipped because your payment method was declined.
 
-   Update your billing information within 12 hours:
+    Update your billing information within 12 hours:
 
-   http://amaz0n-billing-support.net/update-payment
+    http://amaz0n-billing-support.net/update-payment
 
-   Amazon Customer Service`,
+    Amazon Customer Service`,
 
-     legit: `Hi Sarah,
+      legit: `Hi Sarah,
 
-   Just confirming our appointment tomorrow at 2:30 PM.
+    Just confirming our appointment tomorrow at 2:30 PM.
 
-   Please remember to bring your insurance card if it has changed.
+    Please remember to bring your insurance card if it has changed.
 
-   See you tomorrow!
+    See you tomorrow!
 
-   Bright Smile Dental`
-   };
+    Bright Smile Dental`
+    };
 
   /* ---------------------------------------------------------
      Initialization & Local Storage for API Key
@@ -344,17 +344,7 @@
     try {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-      const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
-
-You MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:
-{
-  "riskScore": <integer between 0 and 100>,
-  "threatLevel": "<HIGH | MEDIUM | LOW | NEUTRAL>",
-  "scamType": "<Short category like Phishing, Tech Support Scam, Crypto Fraud, etc.>",
-  "redFlags": ["<Specific red flag 1>", "<Specific red flag 2>"],
-  "explanation": ["<Detailed point 1>", "<Detailed point 2>"],
-  "recommendedProtocol": "<Clear, actionable security advice for the user>"
-}`;
+      const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing pa[...]\n\nYou MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:\n{\n  "riskScore": <integer between 0 and 100>,\n  "threatLevel": "<HIGH | MEDIUM | LOW | NEUTRAL>",\n  "scamType": "<Short category like Phishing, Tech Support Scam, Crypto Fraud, etc.>",\n  "redFlags": ["<Specific red flag 1>", "<Specific red flag 2>"],\n  "explanation": ["<Detailed point 1>", "<Detailed point 2>"],\n  "recommendedProtocol": "<Clear, actionable security advice for the user>"\n}`;
 
       const payload = {
           contents: [
@@ -365,102 +355,101 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
                   text: systemPrompt + "\n\nText to analyze:\n" + text
                }
             ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.3,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT',
-            properties: {
-              riskScore: { type: 'NUMBER' },
-              threatLevel: { type: 'STRING' },
-              scamType: { type: 'STRING' },
-              redFlags: {
-                type: 'ARRAY',
-                items: { type: 'STRING' }
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                riskScore: { type: 'NUMBER' },
+                threatLevel: { type: 'STRING' },
+                scamType: { type: 'STRING' },
+                redFlags: {
+                  type: 'ARRAY',
+                  items: { type: 'STRING' }
+                },
+                explanation: {
+                  type: 'ARRAY',
+                  items: { type: 'STRING' }
+                },
+                recommendedProtocol: {
+                  type: 'STRING'
+                }
               },
-              explanation: {
-                type: 'ARRAY',
-                items: { type: 'STRING' }
-              },
-              recommendedProtocol: {
-                type: 'STRING'
-              }
-            },
-            required: [
-              'riskScore',
-              'threatLevel',
-              'scamType',
-              'redFlags',
-              'explanation',
-              'recommendedProtocol'
-            ]
+              required: [
+                'riskScore',
+                'threatLevel',
+                'scamType',
+                'redFlags',
+                'explanation',
+                'recommendedProtocol'
+              ]
+            }
           }
+        };
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          let errMsg = `API Error: ${response.status} ${response.statusText}`;
+          try {
+            const errBody = await response.json();
+            if (errBody && errBody.error && errBody.error.message) {
+              errMsg = errBody.error.message;
+            }
+          } catch (_) { }
+          throw new Error(errMsg);
         }
-      };
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
 
-      if (!response.ok) {
-        let errMsg = `API Error: ${response.status} ${response.statusText}`;
+        const data = await response.json();
+
+        if (data && data.promptFeedback && data.promptFeedback.blockReason) {
+          throw new Error(`Gemini blocked this request (${data.promptFeedback.blockReason}). Try rephrasing.`);
+        }
+
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawText) {
+          throw new Error('Gemini returned an empty response. Please try again.');
+        }
+
+        const cleanText = stripCodeFences(rawText);
+
+        let parsed;
         try {
-          const errBody = await response.json();
-          if (errBody && errBody.error && errBody.error.message) {
-            errMsg = errBody.error.message;
-          }
-        } catch (_) { }
-        throw new Error(errMsg);
+          parsed = JSON.parse(cleanText);
+        } catch (parseErr) {
+          throw new Error('Gemini returned a response that could not be read as JSON. Please try again.');
+        }
+
+        const result = normalizeResult(parsed);
+        showResultsState(result);
+
+      } catch (err) {
+        resetResultsToIdle();
+        const message = (err && err.message) ? err.message : 'Something went wrong while contacting Gemini.';
+        showToast(message);
+      } finally {
+        setAnalyzing(false);
       }
-
-      const data = await response.json();
-
-      if (data && data.promptFeedback && data.promptFeedback.blockReason) {
-        throw new Error(`Gemini blocked this request (${data.promptFeedback.blockReason}). Try rephrasing.`);
-      }
-
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!rawText) {
-        throw new Error('Gemini returned an empty response. Please try again.');
-      }
-
-      const cleanText = stripCodeFences(rawText);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch (parseErr) {
-        throw new Error('Gemini returned a response that could not be read as JSON. Please try again.');
-      }
-
-      const result = normalizeResult(parsed);
-      showResultsState(result);
-
-    } catch (err) {
-      resetResultsToIdle();
-      const message = (err && err.message) ? err.message : 'Something went wrong while contacting Gemini.';
-      showToast(message);
-    } finally {
-      setAnalyzing(false);
     }
-  }
 
-  if (analyzeBtn) {
-    analyzeBtn.addEventListener('click', analyzeThreat);
-  }
+    if (analyzeBtn) {
+      analyzeBtn.addEventListener('click', analyzeThreat);
+    }
 
-  if (userInput) {
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        analyzeThreat();
-      }
-    });
-  }
+    if (userInput) {
+      userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          analyzeThreat();
+        }
+      });
+    }
 
 })();
