@@ -38,6 +38,41 @@
 
   const toastStack         = document.getElementById('toastStack');
 
+  const SAMPLES = {
+     bank: `Subject: URGENT - Account Suspension Notice
+
+   Dear Valued Customer,
+
+   We have detected unusual activity on your First National Bank account ending in 4482. Your account will be SUSPENDED within 24 hours unless you verify your identity immediately.
+
+   Click here to confirm your details:
+   http://fnb-secure-verify.com/login
+
+   Failure to act will result in permanent account closure.
+
+   First National Bank Security Team`,
+
+     amazon: `Hello,
+
+   Your recent Amazon order #702-1938224-5563141 could not be shipped because your payment method was declined.
+
+   Update your billing information within 12 hours:
+
+   http://amaz0n-billing-support.net/update-payment
+
+   Amazon Customer Service`,
+
+     legit: `Hi Sarah,
+
+   Just confirming our appointment tomorrow at 2:30 PM.
+
+   Please remember to bring your insurance card if it has changed.
+
+   See you tomorrow!
+
+   Bright Smile Dental`
+   };
+
   /* ---------------------------------------------------------
      Initialization & Local Storage for API Key
   --------------------------------------------------------- */
@@ -75,15 +110,19 @@
   --------------------------------------------------------- */
   samplerButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const sampleText = btn.getAttribute('data-sample');
-      if (userInput && sampleText) {
-        userInput.value = sampleText;
-        if (charCount) charCount.textContent = sampleText.length;
-        // Trigger subtle pulse effect
-        userInput.focus();
-      }
-    });
+      const key = btn.getAttribute('data-sample');
+       
+      if (userInput && SAMPLES[key]) {
+        userInput.value = SAMPLES[key];
+         
+        if (charCount) {
+          charCount.textContent = SAMPLES[key].length;
+       }
+         
+       userInput.focus();
+    }
   });
+});
 
   /* ---------------------------------------------------------
      Toast Notifications
