@@ -17,7 +17,6 @@
   const newScanBtn         = document.getElementById("newScanBtn");
   const samplerButtons     = document.querySelectorAll('.sampler-btn');
   
-
   const analyzeBtn         = document.getElementById('analyzeBtn');
   const analyzeIcon        = analyzeBtn.querySelector('.btn-icon');
   const analyzeLabel       = analyzeBtn.querySelector('.btn-label');
@@ -171,7 +170,7 @@
   }
 
   /* ---------------------------------------------------------
-     UI State Management
+     UI State Management (FIXED)
   --------------------------------------------------------- */
   function setAnalyzing(isAnalyzing) {
     if (!analyzeBtn) return;
@@ -180,7 +179,10 @@
       if (analyzeIcon) analyzeIcon.textContent = '⏳';
       if (analyzeLabel) analyzeLabel.textContent = 'ANALYZING THREAT...';
       if (resultsIdle) resultsIdle.style.display = 'none';
-      if (resultsCard) resultsCard.style.display = 'none';
+      if (resultsCard) {
+        resultsCard.style.display = ''; 
+        resultsCard.classList.remove('visible');
+      }
       if (resultsLoading) resultsLoading.style.display = 'flex';
       startScanStatusAnimation();
     } else {
@@ -196,7 +198,7 @@
     "Initializing heuristics scanner...",
     "Extracting URL patterns & phone vectors...",
     "Cross-referencing global scam databases...",
-    "Querying Gemini 3.6 Flash security core...",
+    "Querying Gemini security core...",
     "Synthesizing risk assessment & mitigation protocol..."
   ];
 
@@ -219,22 +221,28 @@
 
   function resetResultsToIdle() {
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) resultsCard.style.display = 'none';
+    if (resultsCard) {
+      resultsCard.style.display = ''; 
+      resultsCard.classList.remove('visible'); 
+    }
     if (resultsIdle) resultsIdle.style.display = 'flex';
   }
 
   function showResultsState(result) {
     if (resultsIdle) resultsIdle.style.display = 'none';
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) resultsCard.style.display = 'grid';
+    if (resultsCard) {
+      resultsCard.style.display = ''; 
+      resultsCard.classList.add('visible'); 
+    }
 
     // Risk Score & Gauge
     const score = Math.max(0, Math.min(100, Number(result.riskScore) || 0));
     if (riskScoreValue) riskScoreValue.textContent = score;
     
-    // SVG Dasharray circumference for radius 85 is ~534.07
     if (gaugeFill) {
       const circumference = 534.07;
+      gaugeFill.style.strokeDasharray = circumference; 
       const offset = circumference - (score / 100) * circumference;
       gaugeFill.style.strokeDashoffset = offset;
     }
@@ -243,11 +251,11 @@
     const tier = (result.threatLevel || 'NEUTRAL').toUpperCase();
     if (threatLevelText) threatLevelText.textContent = tier;
     if (threatLevelBadge) {
-      threatLevelBadge.className = 'threat-level-badge';
-      if (tier === 'HIGH') threatLevelBadge.classList.add('badge-high');
-      else if (tier === 'MEDIUM') threatLevelBadge.classList.add('badge-medium');
-      else if (tier === 'LOW') threatLevelBadge.classList.add('badge-low');
-      else threatLevelBadge.classList.add('badge-neutral');
+      threatLevelBadge.className = 'threat-level-badge'; 
+      if (tier === 'HIGH') threatLevelBadge.classList.add('threat-high');
+      else if (tier === 'MEDIUM') threatLevelBadge.classList.add('threat-medium');
+      else if (tier === 'LOW') threatLevelBadge.classList.add('threat-low');
+      else threatLevelBadge.classList.add('threat-neutral');
     }
 
     if (scamTypeValue) scamTypeValue.textContent = result.scamType || 'General Inquiry';
@@ -334,8 +342,6 @@
     setAnalyzing(true);
 
     try {
-      // Correct endpoint for Gemini 3.6 Flash
-     // Valid Gemini 1.5 Flash endpoint
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
       const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
@@ -361,39 +367,38 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
             ]
           }
         ],
-
         generationConfig: {
-        temperature: 0.3,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: {
-            riskScore: { type: 'NUMBER' },
-            threatLevel: { type: 'STRING' },
-            scamType: { type: 'STRING' },
-            redFlags: {
-              type: 'ARRAY',
-              items: { type: 'STRING' }
+          temperature: 0.3,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              riskScore: { type: 'NUMBER' },
+              threatLevel: { type: 'STRING' },
+              scamType: { type: 'STRING' },
+              redFlags: {
+                type: 'ARRAY',
+                items: { type: 'STRING' }
+              },
+              explanation: {
+                type: 'ARRAY',
+                items: { type: 'STRING' }
+              },
+              recommendedProtocol: {
+                type: 'STRING'
+              }
             },
-            explanation: {
-              type: 'ARRAY',
-              items: { type: 'STRING' }
-            },
-            recommendedProtocol: {
-              type: 'STRING'
-            }
-          },
-          required: [
-            'riskScore',
-            'threatLevel',
-            'scamType',
-            'redFlags',
-            'explanation',
-            'recommendedProtocol'
-          ]
+            required: [
+              'riskScore',
+              'threatLevel',
+              'scamType',
+              'redFlags',
+              'explanation',
+              'recommendedProtocol'
+            ]
+          }
         }
-      }
-    };
+      };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -409,7 +414,7 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
           if (errBody && errBody.error && errBody.error.message) {
             errMsg = errBody.error.message;
           }
-        } catch (_) { /* response body wasn't JSON */ }
+        } catch (_) { }
         throw new Error(errMsg);
       }
 
