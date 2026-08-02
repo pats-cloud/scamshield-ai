@@ -288,15 +288,49 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
 }`;
 
       const payload = {
-        contents: [
-          {
-            parts: [
-              { text: systemPrompt + "\n\nText to analyze:\n" + text }
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: systemPrompt + "\n\nText to analyze:\n" + text
+               }
             ]
           }
-        ]
-      };
+        ],
 
+        generationConfig: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            risk_score: { type: 'NUMBER' },
+            threat_level: { type: 'STRING' },
+            scam_type: { type: 'STRING' },
+            flags: {
+              type: 'ARRAY',
+              items: { type: 'STRING' }
+            },
+            explanation: {
+              type: 'ARRAY',
+              items: { type: 'STRING' }
+            },
+            recommendation: {
+              type: 'STRING'
+            }
+          },
+          required: [
+            'riskScore',
+            'threatLevel',
+            'scamType',
+            'redFlags',
+            'explanation',
+            'recommendedProtocol'
+          ]
+        }
+      }
+    };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
