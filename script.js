@@ -201,14 +201,21 @@
 
   function resetResultsToIdle() {
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) resultsCard.style.display = 'none';
+    if (resultsCard) {
+        resultsCard.style.display = 'none';
+        resultsCard.classList.remove('visible');
+      }
+  
     if (resultsIdle) resultsIdle.style.display = 'flex';
   }
 
   function showResultsState(result) {
     if (resultsIdle) resultsIdle.style.display = 'none';
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) resultsCard.style.display = 'grid';
+    if (resultsCard) {
+    resultsCard.style.display = ''; // Clear inline styles
+    resultsCard.classList.add('visible'); // Trigger the CSS animation
+  }
 
     // Risk Score & Gauge
     const score = Math.max(0, Math.min(100, Number(result.riskScore) || 0));
