@@ -2,7 +2,7 @@
 
 /* =========================================================
    ScamShield AI — script.js
-   100% client-side. Talks directly to the Gemini REST API.
+   100% client-side (Option 1). Talks directly to Gemini.
 ========================================================= */
 
 (function () {
@@ -34,6 +34,7 @@
 
   const scamTypeValue      = document.getElementById('scamTypeValue');
   const flagsList          = document.getElementById('flagsList');
+  const explanationList    = document.getElementById('explanationList'); // NEW DOM element
   const recommendationValue = document.getElementById('recommendationValue');
 
   const toastStack         = document.getElementById('toastStack');
@@ -68,8 +69,7 @@ Click here to confirm your details: hxxp://fnb-secure-verify.com/login
 
 Failure to act will result in permanent account closure and may affect your credit standing.
 
-First National Bank Security Team
-Do not reply to this automated message.`,
+First National Bank Security Team`,
 
     amazon:
 `Hello,
@@ -78,18 +78,14 @@ Your recent Amazon order #702-1938224-5563141 could not be shipped because your 
 
 To avoid cancellation of your order, please update your billing information within 12 hours by clicking the link below:
 
-http://amaz0n-billing-support.net/update-payment
-
-Thank you for shopping with us.
-
-Amazon Customer Service`,
+http://amaz0n-billing-support.net/update-payment`,
 
     legit:
 `Hi Sarah,
 
 Just confirming our appointment tomorrow (Tuesday) at 2:30 PM at Bright Smile Dental. Please remember to bring your insurance card if it's been updated since your last visit.
 
-If you need to reschedule, just call the office directly at the number on our website — we're open until 5pm today.
+If you need to reschedule, just call the office directly at the number on our website.
 
 See you then!
 Front Desk, Bright Smile Dental`
@@ -101,19 +97,19 @@ Front Desk, Bright Smile Dental`
   try {
     const savedKey = sessionStorage.getItem(SESSION_KEY_STORAGE);
     if (savedKey) apiKeyInput.value = savedKey;
-  } catch (_) { /* sessionStorage unavailable — non-fatal */ }
+  } catch (_) {}
 
   apiKeyInput.addEventListener('input', () => {
     try {
       sessionStorage.setItem(SESSION_KEY_STORAGE, apiKeyInput.value);
-    } catch (_) { /* ignore storage errors */ }
+    } catch (_) {}
   });
 
   toggleKeyBtn.addEventListener('click', () => {
     const isPassword = apiKeyInput.type === 'password';
     apiKeyInput.type = isPassword ? 'text' : 'password';
+    toggleKeyBtn.textContent = isPassword ? '[ - ]' : '[ O ]';
     toggleKeyBtn.setAttribute('aria-pressed', String(isPassword));
-    toggleKeyBtn.setAttribute('aria-label', isPassword ? 'Hide API key' : 'Show API key');
   });
 
   /* ---------------------------------------------------------
@@ -121,7 +117,7 @@ Front Desk, Bright Smile Dental`
   --------------------------------------------------------- */
   function updateCharCount() {
     const n = userInput.value.length;
-    charCount.textContent = `${n.toLocaleString()} character${n === 1 ? '' : 's'}`;
+    charCount.textContent = `${n.toLocaleString()} CHARS`;
   }
   userInput.addEventListener('input', updateCharCount);
   updateCharCount();
@@ -147,21 +143,13 @@ Front Desk, Bright Smile Dental`
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerHTML = `
-      <svg class="toast-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-        <path d="M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <circle cx="12" cy="16" r="0.9" fill="currentColor"/>
-      </svg>
-      <span class="toast-message"></span>
+      <span class="toast-message">${message}</span>
       <button type="button" class="toast-close" aria-label="Dismiss">×</button>
     `;
-    toast.querySelector('.toast-message').textContent = message;
-
     const removeToast = () => {
       toast.classList.add('leaving');
       setTimeout(() => toast.remove(), 250);
     };
-
     toast.querySelector('.toast-close').addEventListener('click', removeToast);
     toastStack.appendChild(toast);
     setTimeout(removeToast, 7000);
@@ -201,8 +189,7 @@ Front Desk, Bright Smile Dental`
 
     renderResult(result);
 
-    resultsCard.style.display = 'grid';
-    // Allow the browser to register display:flex before animating opacity/transform in.
+    resultsCard.style.display = 'flex';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resultsCard.classList.add('visible'));
     });
@@ -215,8 +202,7 @@ Front Desk, Bright Smile Dental`
     const level = (threatLevel || '').toLowerCase();
     if (level.includes('critical') || level.includes('high')) return 'high';
     if (level.includes('medium') || level.includes('moderate')) return 'medium';
-    if (level.includes('low')) return 'low';
-    // Fall back to the numeric score if the label wasn't recognized.
+    if (level.includes('low') || level.includes('safe')) return 'low';
     if (riskScore >= 70) return 'high';
     if (riskScore >= 35) return 'medium';
     if (riskScore >= 0) return 'low';
@@ -241,38 +227,23 @@ Front Desk, Bright Smile Dental`
     const tier = getTier(result.threat_level, result.risk_score);
     const color = TIER_COLORS[tier] || TIER_COLORS.neutral;
 
-    // Gauge ring
     const offset = GAUGE_CIRCUMFERENCE - (result.risk_score / 100) * GAUGE_CIRCUMFERENCE;
     gaugeFill.style.stroke = color;
-    
-    // Set to 0 to start
     gaugeFill.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE);
-    
-    // Force a browser reflow so it registers the starting position
     void gaugeFill.offsetWidth; 
-    
-    // Now apply the calculated offset to trigger the CSS transition
     gaugeFill.style.strokeDashoffset = String(offset);
     
     riskScoreValue.textContent = String(result.risk_score);
 
-    // Badge
-    threatLevelBadge.classList.remove('threat-high', 'threat-medium', 'threat-low', 'threat-neutral');
-    threatLevelBadge.classList.add(`threat-${tier}`);
+    threatLevelBadge.className = `threat-level-badge threat-${tier}`;
     threatLevelText.textContent = result.threat_level;
-
-    // Shared accent color for flag cards / recommendation border
     resultsCard.style.setProperty('--tier-accent', color);
-
-    // Scam type
     scamTypeValue.textContent = result.scam_type;
 
-    // Flags
+    // Render Red Flags
     flagsList.innerHTML = '';
     if (result.flags.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = 'No specific red flags identified.';
-      flagsList.appendChild(li);
+      flagsList.innerHTML = '<li>No specific red flags identified.</li>';
     } else {
       result.flags.forEach((flag) => {
         const li = document.createElement('li');
@@ -281,7 +252,18 @@ Front Desk, Bright Smile Dental`
       });
     }
 
-    // Recommendation
+    // Render AI Reasoning (The new section you added)
+    explanationList.innerHTML = '';
+    if (result.explanation.length === 0) {
+      explanationList.innerHTML = '<li>No specific reasoning provided.</li>';
+    } else {
+      result.explanation.forEach((exp) => {
+        const li = document.createElement('li');
+        li.textContent = exp;
+        explanationList.appendChild(li);
+      });
+    }
+
     recommendationValue.textContent = result.recommendation;
   }
 
@@ -289,31 +271,23 @@ Front Desk, Bright Smile Dental`
      Gemini prompt construction
   --------------------------------------------------------- */
   function buildRequestBody(message) {
-    const systemPrompt = `You are ScamShield AI, an expert cybersecurity threat analyst specializing in detecting phishing, scams, and fraudulent messages (emails, SMS texts, DMs, etc).
+    const systemPrompt = `You are ScamShield AI, an expert cybersecurity threat analyst.
+Analyze the message and assess how likely it is to be a scam. Base your judgment on real cybersecurity red flags.
+If the message looks legitimate, assign a low risk_score and say so plainly.
 
-Analyze the message the user provides and assess how likely it is to be a scam, phishing attempt, or fraud. Base your judgment on real cybersecurity red flags such as: urgency or pressure tactics, mismatched or suspicious links, requests for credentials or personal/financial information, spoofed or impersonated senders, grammar inconsistent with the claimed sender, unexpected attachments, too-good-to-be-true offers, and threats of account suspension or legal action.
-
-If the message looks like a normal, safe, legitimate communication with no meaningful red flags, assign a low risk_score and say so plainly.
-
-Respond with ONLY a raw JSON object — no markdown, no code fences, no commentary before or after — matching exactly this shape:
+Respond with ONLY a raw JSON object matching exactly this shape:
 {
-  "risk_score": 0-100 integer, where 100 means certainly a scam,
-  "threat_level": one of "Low", "Medium", "High", "Critical",
-  "scam_type": short label for the type of scam, or "Not a Scam" if it looks legitimate,
-  "flags": array of short strings, each one specific suspicious indicator found (empty array if none),
-  "recommendation": one or two sentences of clear, actionable advice for the recipient
+  "risk_score": 0-100 integer,
+  "threat_level": one of "Safe", "Low", "Medium", "High", "Critical",
+  "scam_type": short label for the type of scam, or "Not a Scam",
+  "flags": array of short strings, specific suspicious indicators found (empty if none),
+  "explanation": array of short strings, explaining the step-by-step logic/reasoning of why this decision was made,
+  "recommendation": one or two sentences of clear, actionable advice
 }`;
 
     return {
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `Analyze the following message:\n\n"""\n${message}\n"""` }]
-        }
-      ],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: `Analyze the following message:\n\n"""\n${message}\n"""` }] }],
       generationConfig: {
         temperature: 0.3,
         responseMimeType: 'application/json',
@@ -324,74 +298,56 @@ Respond with ONLY a raw JSON object — no markdown, no code fences, no commenta
             threat_level: { type: 'STRING' },
             scam_type: { type: 'STRING' },
             flags: { type: 'ARRAY', items: { type: 'STRING' } },
+            explanation: { type: 'ARRAY', items: { type: 'STRING' } }, // New property added!
             recommendation: { type: 'STRING' }
           },
-          required: ['risk_score', 'threat_level', 'scam_type', 'flags', 'recommendation']
+          required: ['risk_score', 'threat_level', 'scam_type', 'flags', 'explanation', 'recommendation']
         }
       }
     };
   }
 
-  /* ---------------------------------------------------------
-     Strip \`\`\`json ... \`\`\` (or \`\`\` ... \`\`\`) fences, defensively
-  --------------------------------------------------------- */
   function stripCodeFences(raw) {
     if (!raw) return '';
-    let text = raw.trim();
-    text = text.replace(/^```[a-zA-Z]*\s*/, '');
-    text = text.replace(/```\s*$/, '');
-    return text.trim();
+    return raw.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
   }
 
-  /* ---------------------------------------------------------
-     Normalize whatever Gemini returned into safe values
-  --------------------------------------------------------- */
   function normalizeResult(obj) {
     const rawScore = Number(obj && obj.risk_score);
     const risk_score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 0;
+    const threat_level = (obj && obj.threat_level) ? obj.threat_level.trim() : 'Unknown';
+    const scam_type = (obj && obj.scam_type) ? obj.scam_type.trim() : 'Unclassified';
+    
+    const flags = (obj && Array.isArray(obj.flags)) ? obj.flags.map(f => String(f).trim()) : [];
+    
+    // Process new explanation array
+    const explanation = (obj && Array.isArray(obj.explanation)) ? obj.explanation.map(e => String(e).trim()) : ["Analysis completed."];
+    
+    const recommendation = (obj && obj.recommendation) ? obj.recommendation.trim() : 'No specific recommendation returned.';
 
-    const threat_level = (obj && typeof obj.threat_level === 'string' && obj.threat_level.trim())
-      ? obj.threat_level.trim()
-      : 'Unknown';
-
-    const scam_type = (obj && typeof obj.scam_type === 'string' && obj.scam_type.trim())
-      ? obj.scam_type.trim()
-      : 'Unclassified';
-
-    const flags = (obj && Array.isArray(obj.flags))
-      ? obj.flags.filter((f) => typeof f === 'string' && f.trim()).map((f) => f.trim())
-      : [];
-
-    const recommendation = (obj && typeof obj.recommendation === 'string' && obj.recommendation.trim())
-      ? obj.recommendation.trim()
-      : 'No specific recommendation was returned. When in doubt, avoid clicking links or sharing personal information, and verify the sender through an independent, trusted channel.';
-
-    return { risk_score, threat_level, scam_type, flags, recommendation };
+    return { risk_score, threat_level, scam_type, flags, explanation, recommendation };
   }
 
-  /* ---------------------------------------------------------
-     Analyze button state helpers
-  --------------------------------------------------------- */
   function setAnalyzing(isAnalyzing) {
     analyzeBtn.disabled = isAnalyzing;
-    analyzeLabel.textContent = isAnalyzing ? 'Analyzing…' : 'Analyze Threat';
+    analyzeLabel.textContent = isAnalyzing ? 'ANALYZING…' : 'START ANALYSIS';
     analyzeIcon.classList.toggle('spin', isAnalyzing);
   }
 
   /* ---------------------------------------------------------
-     Main analyze flow
+     Main analyze flow (Direct API Call)
   --------------------------------------------------------- */
   async function analyzeThreat() {
     const apiKey = apiKeyInput.value.trim();
     const message = userInput.value.trim();
 
     if (!apiKey) {
-      showToast('Add your Gemini API key above before running a scan.');
+      showToast('Please enter your Gemini API key first.');
       apiKeyInput.focus();
       return;
     }
     if (!message) {
-      showToast('Paste a message to analyze first.');
+      showToast('Please paste a message to analyze.');
       userInput.focus();
       return;
     }
@@ -399,7 +355,8 @@ Respond with ONLY a raw JSON object — no markdown, no code fences, no commenta
     setAnalyzing(true);
     showLoadingState();
 
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    // Option 1 Endpoint: Direct to Google
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
      
     try {
       const response = await fetch(endpoint, {
@@ -409,50 +366,27 @@ const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini
       });
 
       if (!response.ok) {
-        let errMsg = `Gemini API request failed (HTTP ${response.status}).`;
+        let errMsg = `API request failed (HTTP ${response.status}).`;
         try {
           const errBody = await response.json();
-          if (errBody && errBody.error && errBody.error.message) {
-            errMsg = errBody.error.message;
-          }
-        } catch (_) { /* response body wasn't JSON — keep default message */ }
+          if (errBody?.error?.message) errMsg = errBody.error.message;
+        } catch (_) {}
         throw new Error(errMsg);
       }
 
       const data = await response.json();
-
-      if (data && data.promptFeedback && data.promptFeedback.blockReason) {
-        throw new Error(`Gemini blocked this request (${data.promptFeedback.blockReason}). Try rephrasing the message.`);
-      }
-
-      const rawText = data &&
-        data.candidates &&
-        data.candidates[0] &&
-        data.candidates[0].content &&
-        data.candidates[0].content.parts &&
-        data.candidates[0].content.parts[0] &&
-        data.candidates[0].content.parts[0].text;
-
-      if (!rawText) {
-        throw new Error('Gemini returned an empty response. Please try again.');
-      }
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('API returned an empty response.');
 
       const cleanText = stripCodeFences(rawText);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(cleanText);
-      } catch (parseErr) {
-        throw new Error('Gemini returned a response that could not be read as JSON. Please try again.');
-      }
+      const parsed = JSON.parse(cleanText);
 
       const result = normalizeResult(parsed);
       showResultsState(result);
 
     } catch (err) {
       resetResultsToIdle();
-      const message = (err && err.message) ? err.message : 'Something went wrong while contacting Gemini.';
-      showToast(message);
+      showToast((err && err.message) ? err.message : 'Something went wrong.');
     } finally {
       setAnalyzing(false);
     }
