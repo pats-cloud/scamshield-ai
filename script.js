@@ -2,7 +2,6 @@
 
 /* =========================================================
    ScamShield AI — script.js
-   100% client-side. Talks directly to the Gemini REST API.
 ========================================================= */
 
 (function () {
@@ -31,407 +30,299 @@
 
   const threatLevelBadge   = document.getElementById('threatLevelBadge');
   const threatLevelText    = document.getElementById('threatLevelText');
-
   const scamTypeValue      = document.getElementById('scamTypeValue');
+
   const flagsList          = document.getElementById('flagsList');
+  const explanationList    = document.getElementById('explanationList');
   const recommendationValue = document.getElementById('recommendationValue');
 
   const toastStack         = document.getElementById('toastStack');
 
   /* ---------------------------------------------------------
-     Constants
+     Initialization & Local Storage for API Key
   --------------------------------------------------------- */
-  const GAUGE_RADIUS = 85;
-  const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
-  gaugeFill.style.strokeDasharray = String(GAUGE_CIRCUMFERENCE);
-  gaugeFill.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE);
-
-  const SCAN_STEPS = [
-    'Parsing message structure…',
-    'Scanning for urgency & pressure tactics…',
-    'Checking links & sender authenticity…',
-    'Cross-referencing known scam patterns…',
-    'Compiling threat report…'
-  ];
-
-  const SESSION_KEY_STORAGE = 'scamshield_gemini_key';
-
-  const SAMPLES = {
-    bank:
-`Subject: URGENT - Account Suspension Notice
-
-Dear Valued Customer,
-
-We have detected unusual activity on your First National Bank account ending in 4482. Your account will be SUSPENDED within 24 hours unless you verify your identity immediately.
-
-Click here to confirm your details: hxxp://fnb-secure-verify.com/login
-
-Failure to act will result in permanent account closure and may affect your credit standing.
-
-First National Bank Security Team
-Do not reply to this automated message.`,
-
-    amazon:
-`Hello,
-
-Your recent Amazon order #702-1938224-5563141 could not be shipped because your payment method was declined.
-
-To avoid cancellation of your order, please update your billing information within 12 hours by clicking the link below:
-
-http://amaz0n-billing-support.net/update-payment
-
-Thank you for shopping with us.
-
-Amazon Customer Service`,
-
-    legit:
-`Hi Sarah,
-
-Just confirming our appointment tomorrow (Tuesday) at 2:30 PM at Bright Smile Dental. Please remember to bring your insurance card if it's been updated since your last visit.
-
-If you need to reschedule, just call the office directly at the number on our website — we're open until 5pm today.
-
-See you then!
-Front Desk, Bright Smile Dental`
-  };
-
-  /* ---------------------------------------------------------
-     API key: persist to sessionStorage only
-  --------------------------------------------------------- */
-  try {
-    const savedKey = sessionStorage.getItem(SESSION_KEY_STORAGE);
-    if (savedKey) apiKeyInput.value = savedKey;
-  } catch (_) { /* sessionStorage unavailable — non-fatal */ }
-
-  apiKeyInput.addEventListener('input', () => {
-    try {
-      sessionStorage.setItem(SESSION_KEY_STORAGE, apiKeyInput.value);
-    } catch (_) { /* ignore storage errors */ }
-  });
-
-  toggleKeyBtn.addEventListener('click', () => {
-    const isPassword = apiKeyInput.type === 'password';
-    apiKeyInput.type = isPassword ? 'text' : 'password';
-    toggleKeyBtn.setAttribute('aria-pressed', String(isPassword));
-    toggleKeyBtn.setAttribute('aria-label', isPassword ? 'Hide API key' : 'Show API key');
-  });
-
-  /* ---------------------------------------------------------
-     Textarea character counter
-  --------------------------------------------------------- */
-  function updateCharCount() {
-    const n = userInput.value.length;
-    charCount.textContent = `${n.toLocaleString()} character${n === 1 ? '' : 's'}`;
+  const savedKey = sessionStorage.getItem('gemini_api_key');
+  if (savedKey && apiKeyInput) {
+    apiKeyInput.value = savedKey;
   }
-  userInput.addEventListener('input', updateCharCount);
-  updateCharCount();
+
+  if (apiKeyInput) {
+    apiKeyInput.addEventListener('input', () => {
+      sessionStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+    });
+  }
+
+  if (toggleKeyBtn && apiKeyInput) {
+    toggleKeyBtn.addEventListener('click', () => {
+      const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      apiKeyInput.setAttribute('type', type);
+      toggleKeyBtn.textContent = type === 'password' ? 'SHOW' : 'HIDE';
+    });
+  }
 
   /* ---------------------------------------------------------
-     Demo sampler buttons
+     Character Counter
   --------------------------------------------------------- */
-  samplerButtons.forEach((btn) => {
+  if (userInput && charCount) {
+    userInput.addEventListener('input', () => {
+      const len = userInput.value.length;
+      charCount.textContent = len;
+    });
+  }
+
+  /* ---------------------------------------------------------
+     Demo Sampler Buttons
+  --------------------------------------------------------- */
+  samplerButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const key = btn.getAttribute('data-sample');
-      if (!SAMPLES[key]) return;
-      userInput.value = SAMPLES[key];
-      updateCharCount();
-      userInput.focus();
-      resetResultsToIdle();
+      const sampleText = btn.getAttribute('data-sample');
+      if (userInput && sampleText) {
+        userInput.value = sampleText;
+        if (charCount) charCount.textContent = sampleText.length;
+        // Trigger subtle pulse effect
+        userInput.focus();
+      }
     });
   });
 
   /* ---------------------------------------------------------
-     Toasts
+     Toast Notifications
   --------------------------------------------------------- */
   function showToast(message) {
+    if (!toastStack) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `
-      <svg class="toast-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-        <path d="M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <circle cx="12" cy="16" r="0.9" fill="currentColor"/>
-      </svg>
-      <span class="toast-message"></span>
-      <button type="button" class="toast-close" aria-label="Dismiss">×</button>
-    `;
-    toast.querySelector('.toast-message').textContent = message;
+    toast.innerHTML = `<span>${escapeHtml(message)}</span><button class="toast-close">&times;</button>`;
+    
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.remove();
+    });
 
-    const removeToast = () => {
-      toast.classList.add('leaving');
-      setTimeout(() => toast.remove(), 250);
-    };
-
-    toast.querySelector('.toast-close').addEventListener('click', removeToast);
     toastStack.appendChild(toast);
-    setTimeout(removeToast, 7000);
+    setTimeout(() => {
+      if (toast.parentElement) toast.remove();
+    }, 5000);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   /* ---------------------------------------------------------
-     Results panel state machine
+     UI State Management
   --------------------------------------------------------- */
-  let scanInterval = null;
-
-  function resetResultsToIdle() {
-    if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-    resultsCard.classList.remove('visible');
-    resultsCard.style.display = 'none';
-    resultsLoading.hidden = true;
-    resultsIdle.hidden = false;
+  function setAnalyzing(isAnalyzing) {
+    if (!analyzeBtn) return;
+    analyzeBtn.disabled = isAnalyzing;
+    if (isAnalyzing) {
+      if (analyzeIcon) analyzeIcon.textContent = '⏳';
+      if (analyzeLabel) analyzeLabel.textContent = 'ANALYZING THREAT...';
+      if (resultsIdle) resultsIdle.style.display = 'none';
+      if (resultsCard) resultsCard.style.display = 'none';
+      if (resultsLoading) resultsLoading.style.display = 'flex';
+      startScanStatusAnimation();
+    } else {
+      if (analyzeIcon) analyzeIcon.textContent = '⚡';
+      if (analyzeLabel) analyzeLabel.textContent = 'ANALYZE THREAT';
+      if (resultsLoading) resultsLoading.style.display = 'none';
+      stopScanStatusAnimation();
+    }
   }
 
-  function showLoadingState() {
-    resultsIdle.hidden = true;
-    resultsCard.classList.remove('visible');
-    resultsCard.style.display = 'none';
-    resultsLoading.hidden = false;
+  let statusInterval = null;
+  const statuses = [
+    "Initializing heuristics scanner...",
+    "Extracting URL patterns & phone vectors...",
+    "Cross-referencing global scam databases...",
+    "Querying Gemini 3.6 Flash security core...",
+    "Synthesizing risk assessment & mitigation protocol..."
+  ];
 
-    let stepIndex = 0;
-    scanStatus.textContent = SCAN_STEPS[0];
-    scanInterval = setInterval(() => {
-      stepIndex = (stepIndex + 1) % SCAN_STEPS.length;
-      scanStatus.textContent = SCAN_STEPS[stepIndex];
-    }, 1100);
+  function startScanStatusAnimation() {
+    if (!scanStatus) return;
+    let idx = 0;
+    scanStatus.textContent = statuses[0];
+    statusInterval = setInterval(() => {
+      idx = (idx + 1) % statuses.length;
+      scanStatus.textContent = statuses[idx];
+    }, 1200);
+  }
+
+  function stopScanStatusAnimation() {
+    if (statusInterval) {
+      clearInterval(statusInterval);
+      statusInterval = null;
+    }
+  }
+
+  function resetResultsToIdle() {
+    if (resultsLoading) resultsLoading.style.display = 'none';
+    if (resultsCard) resultsCard.style.display = 'none';
+    if (resultsIdle) resultsIdle.style.display = 'flex';
   }
 
   function showResultsState(result) {
-    if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-    resultsIdle.hidden = true;
-    resultsLoading.hidden = true;
+    if (resultsIdle) resultsIdle.style.display = 'none';
+    if (resultsLoading) resultsLoading.style.display = 'none';
+    if (resultsCard) resultsCard.style.display = 'grid';
 
-    renderResult(result);
-
-    resultsCard.style.display = 'grid';
-    // Allow the browser to register display:flex before animating opacity/transform in.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => resultsCard.classList.add('visible'));
-    });
-  }
-
-  /* ---------------------------------------------------------
-     Threat-tier helpers
-  --------------------------------------------------------- */
-  function getTier(threatLevel, riskScore) {
-    const level = (threatLevel || '').toLowerCase();
-    if (level.includes('critical') || level.includes('high')) return 'high';
-    if (level.includes('medium') || level.includes('moderate')) return 'medium';
-    if (level.includes('low')) return 'low';
-    // Fall back to the numeric score if the label wasn't recognized.
-    if (riskScore >= 70) return 'high';
-    if (riskScore >= 35) return 'medium';
-    if (riskScore >= 0) return 'low';
-    return 'neutral';
-  }
-
-  const TIER_COLORS = {
-    high: getCssVar('--risk-high'),
-    medium: getCssVar('--risk-medium'),
-    low: getCssVar('--risk-low'),
-    neutral: getCssVar('--risk-neutral')
-  };
-
-  function getCssVar(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-
-  /* ---------------------------------------------------------
-     Render a normalized result into the dashboard
-  --------------------------------------------------------- */
-  function renderResult(result) {
-    const tier = getTier(result.threat_level, result.risk_score);
-    const color = TIER_COLORS[tier] || TIER_COLORS.neutral;
-
-    // Gauge ring
-    const offset = GAUGE_CIRCUMFERENCE - (result.risk_score / 100) * GAUGE_CIRCUMFERENCE;
-    gaugeFill.style.stroke = color;
+    // Risk Score & Gauge
+    const score = Math.max(0, Math.min(100, Number(result.riskScore) || 0));
+    if (riskScoreValue) riskScoreValue.textContent = score;
     
-    // Set to 0 to start
-    gaugeFill.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE);
-    
-    // Force a browser reflow so it registers the starting position
-    void gaugeFill.offsetWidth; 
-    
-    // Now apply the calculated offset to trigger the CSS transition
-    gaugeFill.style.strokeDashoffset = String(offset);
-    
-    riskScoreValue.textContent = String(result.risk_score);
+    // SVG Dasharray circumference for radius 85 is ~534.07
+    if (gaugeFill) {
+      const circumference = 534.07;
+      const offset = circumference - (score / 100) * circumference;
+      gaugeFill.style.strokeDashoffset = offset;
+    }
 
-    // Badge
-    threatLevelBadge.classList.remove('threat-high', 'threat-medium', 'threat-low', 'threat-neutral');
-    threatLevelBadge.classList.add(`threat-${tier}`);
-    threatLevelText.textContent = result.threat_level;
+    // Threat Classification
+    const tier = (result.threatLevel || 'NEUTRAL').toUpperCase();
+    if (threatLevelText) threatLevelText.textContent = tier;
+    if (threatLevelBadge) {
+      threatLevelBadge.className = 'threat-level-badge';
+      if (tier === 'HIGH') threatLevelBadge.classList.add('badge-high');
+      else if (tier === 'MEDIUM') threatLevelBadge.classList.add('badge-medium');
+      else if (tier === 'LOW') threatLevelBadge.classList.add('badge-low');
+      else threatLevelBadge.classList.add('badge-neutral');
+    }
 
-    // Shared accent color for flag cards / recommendation border
-    resultsCard.style.setProperty('--tier-accent', color);
+    if (scamTypeValue) scamTypeValue.textContent = result.scamType || 'General Inquiry';
 
-    // Scam type
-    scamTypeValue.textContent = result.scam_type;
+    // Red Flags List
+    if (flagsList) {
+      flagsList.innerHTML = '';
+      const flags = Array.isArray(result.redFlags) ? result.redFlags : [];
+      if (flags.length === 0) {
+        flagsList.innerHTML = '<li>No specific red flags detected.</li>';
+      } else {
+        flags.forEach(flag => {
+          const li = document.createElement('li');
+          li.textContent = flag;
+          flagsList.appendChild(li);
+        });
+      }
+    }
 
-    // Flags
-    flagsList.innerHTML = '';
-    if (result.flags.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = 'No specific red flags identified.';
-      flagsList.appendChild(li);
-    } else {
-      result.flags.forEach((flag) => {
+    // Explanation List
+    if (explanationList) {
+      explanationList.innerHTML = '';
+      const explanations = Array.isArray(result.explanation) ? result.explanation : [result.explanation || 'No explanation provided.'];
+      explanations.forEach(exp => {
         const li = document.createElement('li');
-        li.textContent = flag;
-        flagsList.appendChild(li);
+        li.textContent = exp;
+        explanationList.appendChild(li);
       });
     }
 
-    // Recommendation
-    recommendationValue.textContent = result.recommendation;
+    // Recommendation Protocol
+    if (recommendationValue) {
+      recommendationValue.textContent = result.recommendedProtocol || 'Exercise caution and verify sender identity through official channels.';
+    }
   }
 
   /* ---------------------------------------------------------
-     Gemini prompt construction
+     JSON Cleaning & Normalization
   --------------------------------------------------------- */
-  function buildRequestBody(message) {
-    const systemPrompt = `You are ScamShield AI, an expert cybersecurity threat analyst specializing in detecting phishing, scams, and fraudulent messages (emails, SMS texts, DMs, etc).
+  function stripCodeFences(text) {
+    if (!text) return '';
+    let cleaned = text.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/^```json/, '');
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```/, '');
+    }
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.slice(0, -3);
+    }
+    return cleaned.trim();
+  }
 
-Analyze the message the user provides and assess how likely it is to be a scam, phishing attempt, or fraud. Base your judgment on real cybersecurity red flags such as: urgency or pressure tactics, mismatched or suspicious links, requests for credentials or personal/financial information, spoofed or impersonated senders, grammar inconsistent with the claimed sender, unexpected attachments, too-good-to-be-true offers, and threats of account suspension or legal action.
-
-If the message looks like a normal, safe, legitimate communication with no meaningful red flags, assign a low risk_score and say so plainly.
-
-Respond with ONLY a raw JSON object — no markdown, no code fences, no commentary before or after — matching exactly this shape:
-{
-  "risk_score": 0-100 integer, where 100 means certainly a scam,
-  "threat_level": one of "Low", "Medium", "High", "Critical",
-  "scam_type": short label for the type of scam, or "Not a Scam" if it looks legitimate,
-  "flags": array of short strings, each one specific suspicious indicator found (empty array if none),
-  "recommendation": one or two sentences of clear, actionable advice for the recipient
-}`;
-
+  function normalizeResult(parsed) {
     return {
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `Analyze the following message:\n\n"""\n${message}\n"""` }]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.3,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: {
-            risk_score: { type: 'NUMBER' },
-            threat_level: { type: 'STRING' },
-            scam_type: { type: 'STRING' },
-            flags: { type: 'ARRAY', items: { type: 'STRING' } },
-            recommendation: { type: 'STRING' }
-          },
-          required: ['risk_score', 'threat_level', 'scam_type', 'flags', 'recommendation']
-        }
-      }
+      riskScore: parsed.riskScore ?? parsed.score ?? 50,
+      threatLevel: parsed.threatLevel ?? parsed.level ?? 'MEDIUM',
+      scamType: parsed.scamType ?? parsed.type ?? 'Unknown Threat',
+      redFlags: parsed.redFlags ?? parsed.flags ?? [],
+      explanation: parsed.explanation ?? parsed.reasons ?? [],
+      recommendedProtocol: parsed.recommendedProtocol ?? parsed.recommendation ?? 'Proceed with extreme caution.'
     };
   }
 
   /* ---------------------------------------------------------
-     Strip \`\`\`json ... \`\`\` (or \`\`\` ... \`\`\`) fences, defensively
-  --------------------------------------------------------- */
-  function stripCodeFences(raw) {
-    if (!raw) return '';
-    let text = raw.trim();
-    text = text.replace(/^```[a-zA-Z]*\s*/, '');
-    text = text.replace(/```\s*$/, '');
-    return text.trim();
-  }
-
-  /* ---------------------------------------------------------
-     Normalize whatever Gemini returned into safe values
-  --------------------------------------------------------- */
-  function normalizeResult(obj) {
-    const rawScore = Number(obj && obj.risk_score);
-    const risk_score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 0;
-
-    const threat_level = (obj && typeof obj.threat_level === 'string' && obj.threat_level.trim())
-      ? obj.threat_level.trim()
-      : 'Unknown';
-
-    const scam_type = (obj && typeof obj.scam_type === 'string' && obj.scam_type.trim())
-      ? obj.scam_type.trim()
-      : 'Unclassified';
-
-    const flags = (obj && Array.isArray(obj.flags))
-      ? obj.flags.filter((f) => typeof f === 'string' && f.trim()).map((f) => f.trim())
-      : [];
-
-    const recommendation = (obj && typeof obj.recommendation === 'string' && obj.recommendation.trim())
-      ? obj.recommendation.trim()
-      : 'No specific recommendation was returned. When in doubt, avoid clicking links or sharing personal information, and verify the sender through an independent, trusted channel.';
-
-    return { risk_score, threat_level, scam_type, flags, recommendation };
-  }
-
-  /* ---------------------------------------------------------
-     Analyze button state helpers
-  --------------------------------------------------------- */
-  function setAnalyzing(isAnalyzing) {
-    analyzeBtn.disabled = isAnalyzing;
-    analyzeLabel.textContent = isAnalyzing ? 'Analyzing…' : 'Analyze Threat';
-    analyzeIcon.classList.toggle('spin', isAnalyzing);
-  }
-
-  /* ---------------------------------------------------------
-     Main analyze flow
+     Main Analysis Trigger (Gemini API Call)
   --------------------------------------------------------- */
   async function analyzeThreat() {
-    const apiKey = apiKeyInput.value.trim();
-    const message = userInput.value.trim();
+    const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+    const text = userInput ? userInput.value.trim() : '';
 
     if (!apiKey) {
-      showToast('Add your Gemini API key above before running a scan.');
-      apiKeyInput.focus();
+      showToast('Please enter your Gemini API Key first.');
+      if (apiKeyInput) apiKeyInput.focus();
       return;
     }
-    if (!message) {
-      showToast('Paste a message to analyze first.');
-      userInput.focus();
+
+    if (!text) {
+      showToast('Please enter or select message/email text to analyze.');
+      if (userInput) userInput.focus();
       return;
     }
 
     setAnalyzing(true);
-    showLoadingState();
 
-const endpoint = `const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;`;
-     
     try {
+      // Correct endpoint for Gemini 3.6 Flash
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+      const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
+
+You MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:
+{
+  "riskScore": <integer between 0 and 100>,
+  "threatLevel": "<HIGH | MEDIUM | LOW | NEUTRAL>",
+  "scamType": "<Short category like Phishing, Tech Support Scam, Crypto Fraud, etc.>",
+  "redFlags": ["<Specific red flag 1>", "<Specific red flag 2>"],
+  "explanation": ["<Detailed point 1>", "<Detailed point 2>"],
+  "recommendedProtocol": "<Clear, actionable security advice for the user>"
+}`;
+
+      const payload = {
+        contents: [
+          {
+            parts: [
+              { text: systemPrompt + "\n\nText to analyze:\n" + text }
+            ]
+          }
+        ]
+      };
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildRequestBody(message))
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        let errMsg = `Gemini API request failed (HTTP ${response.status}).`;
+        let errMsg = `API Error: ${response.status} ${response.statusText}`;
         try {
           const errBody = await response.json();
           if (errBody && errBody.error && errBody.error.message) {
             errMsg = errBody.error.message;
           }
-        } catch (_) { /* response body wasn't JSON — keep default message */ }
+        } catch (_) { /* response body wasn't JSON */ }
         throw new Error(errMsg);
       }
 
       const data = await response.json();
 
       if (data && data.promptFeedback && data.promptFeedback.blockReason) {
-        throw new Error(`Gemini blocked this request (${data.promptFeedback.blockReason}). Try rephrasing the message.`);
+        throw new Error(`Gemini blocked this request (${data.promptFeedback.blockReason}). Try rephrasing.`);
       }
 
-      const rawText = data &&
-        data.candidates &&
-        data.candidates[0] &&
-        data.candidates[0].content &&
-        data.candidates[0].content.parts &&
-        data.candidates[0].content.parts[0] &&
-        data.candidates[0].content.parts[0].text;
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!rawText) {
         throw new Error('Gemini returned an empty response. Please try again.');
@@ -458,6 +349,16 @@ const endpoint = `const endpoint = `https://generativelanguage.googleapis.com/v1
     }
   }
 
-  analyzeBtn.addEventListener('click', analyzeThreat);
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', analyzeThreat);
+  }
+
+  if (userInput) {
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        analyzeThreat();
+      }
+    });
+  }
 
 })();
