@@ -5,7 +5,6 @@
  /* =========================================================
    SCAMSHIELD AI — Google Material Design Theme
 ========================================================= */
-:root {
   /* Google Base Surfaces */
   --bg: #F8F9FA; /* Standard Google light gray app background */
   --bg-deep: #FFFFFF;
@@ -22,6 +21,9 @@
   --accent-soft: #E8F0FE; /* Very light blue for active backgrounds */
   --accent-2: #4285F4;
   --accent-2-soft: rgba(66, 133, 244, 0.1);
+  --accent-dark" #174EA6;
+  --danger: #EA4335;
+  --tier-accent: #EA4335;
 
   /* Google Threat Colors (Red, Yellow, Green) */
   --risk-high: #EA4335; /* Google Red */
@@ -48,7 +50,6 @@
   --radius-md: 8px;
   --radius-sm: 4px;
   --shadow-card: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-}
 }
 
 * { box-sizing: border-box; }
@@ -376,6 +377,9 @@ body {
 .flags-cell { grid-column: 1 / -1; }
 .action-cell { grid-column: 1 / -1; background: var(--accent-dark); border-color: var(--accent); }
 .action-cell .cell-label { color: var(--accent); border-color: var(--accent); }
+.explanation-cell {
+   grid-column: 1 / -1;
+}
 
 /* Score Gauge overrides for Brutalism */
 .score-display { display: flex; justify-content: center; align-items: center; flex: 1; }
