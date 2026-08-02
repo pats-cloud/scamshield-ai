@@ -14,8 +14,9 @@
 
   const userInput          = document.getElementById('userInput');
   const charCount          = document.getElementById('charCount');
-  const samplerButtons     = document.querySelectorAll('.sampler-btn[data-sample]');
   const newScanBtn         = document.getElementById("newScanBtn");
+  const samplerButtons     = document.querySelectorAll('.sampler-btn');
+  
 
   const analyzeBtn         = document.getElementById('analyzeBtn');
   const analyzeIcon        = analyzeBtn.querySelector('.btn-icon');
