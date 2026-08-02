@@ -360,7 +360,7 @@ You MUST respond ONLY with a raw JSON object (no markdown formatting, no code bl
               type: 'ARRAY',
               items: { type: 'STRING' }
             },
-            recommendedFlags: {
+            recommendedProtocol: {
               type: 'STRING'
             }
           },
