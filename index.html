@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ScamShield AI</title>
+  <title>ScamShield AI — Threat Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -48,7 +48,7 @@
         <div class="demo-controls">
           <span class="mono-label">INJECT_TEST_DATA:</span>
           <button type="button" class="sampler-btn" data-sample="bank">BANK_FRAUD</button>
-          <button type="button" class="sampler-btn" data-sample="amazon">AMAZON_PHISHING</button>
+          <button type="button" class="sampler-btn" data-sample="amazon">AMZN_PHISH</button>
           <button type="button" class="sampler-btn" data-sample="legit">SAFE_MSG</button>
         </div>
       </div>
@@ -61,7 +61,7 @@
       </div>
 
       <button type="button" id="analyzeBtn" class="brutalist-action-btn">
-        <span class="btn-label">START ANALYSIS</span>
+        <span class="btn-label">INITIATE_ANALYSIS</span>
         <span class="btn-icon">➔</span>
       </button>
     </section>
@@ -69,19 +69,19 @@
     <section class="results-zone" aria-live="polite">
       
       <div class="scan-stage" id="resultsIdle">
-        <h3 class="stage-mono">READY</h3>
-        <p>Awaiting input.</p>
+        <h3 class="stage-mono">SYSTEM_READY</h3>
+        <p>Awaiting payload injection.</p>
       </div>
 
       <div class="scan-stage" id="resultsLoading" hidden>
         <div class="spinner-block"></div>
-        <h3 class="stage-mono" id="scanStatus">Analyzing message...</h3>
+        <h3 class="stage-mono" id="scanStatus">Analyzing message structure...</h3>
       </div>
 
       <div class="results-bento" id="resultsCard">
         
         <div class="bento-cell score-cell">
-          <div class="cell-label">RISK</div>
+          <div class="cell-label">RISK_QUOTIENT</div>
           <div class="score-display">
             <div class="gauge-wrap state-done" id="gaugeWrap">
               <svg viewBox="0 0 200 200">
@@ -104,15 +104,10 @@
         </div>
 
         <div class="bento-cell flags-cell">
-          <div class="cell-label">RED FLAGS DETECTED</div>
+          <div class="cell-label">DETECTED_ANOMALIES</div>
           <ul id="flagsList" class="flags-list"></ul>
         </div>
 
-        <div class="bento-cell explanation-cell">
-          <div class="cell-label">AI REASONING</div>
-          <ul id="explanationList" class="flags-list"></ul>
-        </div>
-        
         <div class="bento-cell action-cell">
           <div class="cell-label">RECOMMENDED_PROTOCOL</div>
           <p id="recommendationValue" class="protocol-text">—</p>
