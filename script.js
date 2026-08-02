@@ -324,8 +324,8 @@
 
     try {
       // Correct endpoint for Gemini 3.6 Flash
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+       
       const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
 
 You MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:
