@@ -335,7 +335,8 @@
 
     try {
       // Correct endpoint for Gemini 3.6 Flash
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+     // Valid Gemini 1.5 Flash endpoint
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
       const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
 
