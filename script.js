@@ -39,7 +39,7 @@
   const toastStack         = document.getElementById('toastStack');
 
   const SAMPLES = {
-     BANK_FRAUD: `Subject: URGENT - Account Suspension Notice
+     bank: `Subject: URGENT - Account Suspension Notice
 
    Dear Valued Customer,
 
@@ -52,7 +52,7 @@
 
    First National Bank Security Team`,
 
-     AMZN_PHISH: `Hello,
+     amazon: `Hello,
 
    Your recent Amazon order #702-1938224-5563141 could not be shipped because your payment method was declined.
 
@@ -62,7 +62,7 @@
 
    Amazon Customer Service`,
 
-     SAFE_MSG: `Hi Sarah,
+     legit: `Hi Sarah,
 
    Just confirming our appointment tomorrow at 2:30 PM.
 
