@@ -342,9 +342,9 @@
     setAnalyzing(true);
 
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-      const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing pa[...]\n\nYou MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:\n{\n  "riskScore": <integer between 0 and 100>,\n  "threatLevel": "<HIGH | MEDIUM | LOW | NEUTRAL>",\n  "scamType": "<Short category like Phishing, Tech Support Scam, Crypto Fraud, etc.>",\n  "redFlags": ["<Specific red flag 1>", "<Specific red flag 2>"],\n  "explanation": ["<Detailed point 1>", "<Detailed point 2>"],\n  "recommendedProtocol": "<Clear, actionable security advice for the user>"\n}`;
+      const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and other red flags.\n\nYou MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:\n{\n  "riskScore": <integer between 0 and 100>,\n  "threatLevel": "<HIGH | MEDIUM | LOW | NEUTRAL>",\n  "scamType": "<Short category like Phishing, Tech Support Scam, Crypto Fraud, etc.>",\n  "redFlags": ["<Specific red flag 1>", "<Specific red flag 2>"],\n  "explanation": ["<Detailed point 1>", "<Detailed point 2>"],\n  "recommendedProtocol": "<Clear, actionable security advice for the user>"\n}`;
 
       const payload = {
           contents: [
@@ -353,8 +353,9 @@
               parts: [
                 {
                   text: systemPrompt + "\n\nText to analyze:\n" + text
-               }
-            ]
+                }
+              ]
+            }
           ],
           generationConfig: {
             temperature: 0.3,
