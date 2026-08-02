@@ -14,7 +14,8 @@
 
   const userInput          = document.getElementById('userInput');
   const charCount          = document.getElementById('charCount');
-  const samplerButtons     = document.querySelectorAll('.sampler-btn');
+  const samplerButtons     = document.querySelectorAll('.sampler-btn[data-sample]');
+  const newScanBtn         = document.getElementById("newScanBtn");
 
   const analyzeBtn         = document.getElementById('analyzeBtn');
   const analyzeIcon        = analyzeBtn.querySelector('.btn-icon');
@@ -129,6 +130,22 @@
     });
   });
 
+  if (newScanBtn) {
+    newScanBtn.addEventListener('click', () => {
+      if (userInput) {
+        userInput.value = '';
+        userInput.placeholder = 'Paste suspicious text here...';
+        userInput.focus();
+      }
+
+      if (charCount) {
+        charCount.textContent = '0 CHARS';
+      }
+
+      resetResultsToIdle();
+    });
+  }
+
   /* ---------------------------------------------------------
      Toast Notifications
   --------------------------------------------------------- */
@@ -201,21 +218,14 @@
 
   function resetResultsToIdle() {
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) {
-        resultsCard.style.display = 'none';
-        resultsCard.classList.remove('visible');
-      }
-  
+    if (resultsCard) resultsCard.style.display = 'none';
     if (resultsIdle) resultsIdle.style.display = 'flex';
   }
 
   function showResultsState(result) {
     if (resultsIdle) resultsIdle.style.display = 'none';
     if (resultsLoading) resultsLoading.style.display = 'none';
-    if (resultsCard) {
-    resultsCard.style.display = ''; // Clear inline styles
-    resultsCard.classList.add('visible'); // Trigger the CSS animation
-  }
+    if (resultsCard) resultsCard.style.display = 'grid';
 
     // Risk Score & Gauge
     const score = Math.max(0, Math.min(100, Number(result.riskScore) || 0));
@@ -324,8 +334,8 @@
 
     try {
       // Correct endpoint for Gemini 3.6 Flash
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-       
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
       const systemPrompt = `You are ScamShield AI, an advanced cybersecurity threat intelligence system. Analyze the provided message, email, URL, or text snippet for scam indicators, phishing patterns, social engineering tactics, and fraud markers.
 
 You MUST respond ONLY with a raw JSON object (no markdown formatting, no code blocks, no backticks). The JSON structure must match this exact format:
